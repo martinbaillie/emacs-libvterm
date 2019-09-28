@@ -12,7 +12,7 @@ set_target_properties(vterm-module PROPERTIES
   )
 
 # Look for the header file.
-option(USE_SYSTEM_LIBVTERM "Use system libvterm instead of the vendored version." OFF)
+option(USE_SYSTEM_LIBVTERM "Use system libvterm instead of the vendored version." ON)
 
 if(USE_SYSTEM_LIBVTERM)
   find_path(LIBVTERM_INCLUDE_DIR NAMES
