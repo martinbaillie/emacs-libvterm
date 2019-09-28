@@ -569,18 +569,7 @@ static void term_flush_output(Term *term, emacs_env *env) {
 
 static void term_process_key(Term *term, unsigned char *key, size_t len,
                              VTermModifier modifier) {
-  if (is_key(key, len, "<return>")) {
-    if (term->pty_fd > 0) {
-      struct termios keys;
-      tcgetattr(term->pty_fd, &keys);
-      if (keys.c_iflag & ICRNL)
-        vterm_keyboard_unichar(term->vt, 10, modifier);
-      else
-        vterm_keyboard_unichar(term->vt, 13, modifier);
-    } else {
-      vterm_keyboard_key(term->vt, VTERM_KEY_ENTER, modifier);
-    }
-  } else if (is_key(key, len, "<start>")) {
+  if (is_key(key, len, "<start>")) {
     tcflow(term->pty_fd, TCOON);
   } else if (is_key(key, len, "<stop>")) {
     tcflow(term->pty_fd, TCOOFF);
@@ -845,6 +834,24 @@ emacs_value Fvterm_set_pty_name(emacs_env *env, ptrdiff_t nargs,
   return Qnil;
 }
 
+emacs_value Fvterm_get_icrnl(emacs_env *env, ptrdiff_t nargs,
+                              emacs_value args[], void *data) {
+  Term *term = env->get_user_ptr(env, args[0]);
+
+  if (term->pty_fd > 0) {
+    struct termios keys;
+    tcgetattr(term->pty_fd, &keys);
+
+    return env->make_integer(env, keys.c_iflag);
+
+    if (keys.c_iflag & ICRNL)
+      return Qt;
+    else
+      return Qnil;
+  }
+  return Qnil;
+}
+
 int emacs_module_init(struct emacs_runtime *ert) {
   emacs_env *env = ert->get_environment(ert);
 
@@ -929,6 +936,10 @@ int emacs_module_init(struct emacs_runtime *ert) {
   fun = env->make_function(env, 2, 2, Fvterm_set_pty_name,
                            "Sets the name of the pty.", NULL);
   bind_function(env, "vterm--set-pty-name", fun);
+
+  fun = env->make_function(env, 1, 1, Fvterm_get_icrnl,
+                           "Gets the icrnl state of the pty", NULL);
+  bind_function(env, "vterm--get-icrnl", fun);
 
   provide(env, "vterm-module");
 
